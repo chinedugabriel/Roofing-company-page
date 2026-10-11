@@ -1,0 +1,45 @@
+name: Solo CI/CD Pipeline
+
+on:
+  # Phase 1: Test changes before they are merged
+  pull_request:
+    branches: [ main ]
+  
+  # Phase 2: Deploy automatically only when merged to main
+  push:
+    branches: [ main ]
+
+jobs:
+  # JOB 1: Test the code
+  test-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # CHANGE THIS: Use the setup action for your specific language (e.g., setup-python, setup-node)
+      - name: Set up Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22' # Using a stable 2026 LTS version
+
+      - name: Install dependencies
+        run: npm ci # 'npm ci' is faster and cleaner for automated pipelines than 'npm install'
+
+      - name: Run Tests
+        run: npm test
+
+  # JOB 2: Deploy the code (Only runs if Job 1 passes AND we are on the main branch)
+  deploy:
+    needs: test-and-verify # Prevents deployment if tests fail
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Cloud Hosting
+        run: |
+          echo "Your deployment script or provider action goes here."
+          # Example: pulling secrets to log into AWS, Vercel, Render, or Docker
